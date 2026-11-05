@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SafeZone Abidjan — Accueil</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=Public+Sans:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="style.css?v=4">
+</head>
+<body>
+
+<header class="entete">
+  <a class="logo" href="index.html">SafeZone <span>Abidjan</span></a>
+  <nav class="menu" aria-label="Navigation principale">
+    <a href="index.html" class="actif">Accueil</a>
+    <a href="carte.html">Calculer mon risque</a>
+    <a href="incidents.html">Incidents</a>
+    <a href="assistant.html">Assistant</a>
+    <a href="compte.html">Mon compte</a>
+  </nav>
+</header>
+
+<main class="contenu">
+
+  <!-- 1) Présentation + formulaire « Vérifier un lieu » -->
+  <section class="ligne" style="align-items: center; gap: 48px">
+    <div style="flex: 1 1 420px; display: flex; flex-direction: column; gap: 20px">
+      <h1 style="margin: 0; font-size: 56px; font-weight: 800">Savoir avant<br>de sortir.</h1>
+      <p class="texte-gris" style="margin: 0; font-size: 19px; max-width: 520px">
+        SafeZone estime le risque d'agression dans les 13 communes d'Abidjan selon l'heure,
+        à partir des faits divers publiés dans la presse depuis 2010.
+      </p>
+
+      <!-- Les mêmes 5 étapes que la page « Calculer mon risque » (et que le mobile et le desktop) -->
+      <form id="formulaire" class="carte-blanche formulaire-risque">
+        <div class="champ">
+          <label for="commune">1. Où allez-vous ? (commune)</label>
+          <select id="commune" required></select>
+        </div>
+        <div class="champ">
+          <label for="quartier">2. Quartier</label>
+          <select id="quartier"></select>
+        </div>
+        <div class="champ">
+          <label for="heure">3. À quelle heure ?</label>
+          <select id="heure"></select>
+        </div>
+        <div class="champ">
+          <label for="deplacement">4. Comment vous déplacez-vous ?</label>
+          <select id="deplacement">
+            <option value="">Je ne sais pas encore</option>
+            <option value="pied">À pied</option>
+            <option value="moto">À moto</option>
+            <option value="taxi">Taxi / woro-woro / gbaka</option>
+            <option value="voiture">En voiture</option>
+            <option value="bus">En bus</option>
+          </select>
+        </div>
+        <div class="champ">
+          <label for="eclairage">5. La rue est-elle éclairée ?</label>
+          <select id="eclairage">
+            <option value="">Je ne sais pas</option>
+            <option value="eclairee">Oui, éclairée</option>
+            <option value="sombre">Non, sombre</option>
+          </select>
+        </div>
+        <button class="bouton" type="submit">Calculer le risque</button>
+        <button class="bouton bouton-clair" type="button" id="ma-position" style="grid-column: 1 / -1">
+          Utiliser ma position
+        </button>
+        <p id="message-position" class="petit texte-gris" style="margin: 0; grid-column: 1 / -1"></p>
+      </form>
+    </div>
+
+    <!-- 2) Les communes les plus à risque ce soir -->
+    <div class="carte-blanche" style="flex: 1 1 380px">
+      <div style="display: flex; justify-content: space-between; align-items: baseline">
+        <h2 style="margin: 0 0 12px; font-size: 22px">Risque ce soir (20 h)</h2>
+        <a href="carte.html" class="petit">Calculer mon risque</a>
+      </div>
+      <ul id="classement" style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px">
+        <li class="chargement">Chargement…</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 3) Statistiques -->
+  <section style="margin-top: 72px">
+    <h2 style="font-size: 34px; margin: 0 0 20px">Les agressions à Abidjan en chiffres</h2>
+    <div class="grille" id="chiffres"><p class="chargement">Chargement…</p></div>
+    <div class="grille" style="margin-top: 20px">
+      <div class="carte-blanche">
+        <h3 style="margin: 0 0 16px">Par commune</h3>
+        <ul class="barres" id="barres-communes"></ul>
+      </div>
+      <div class="carte-blanche">
+        <h3 style="margin: 0 0 16px">Par moment de la journée</h3>
+        <ul class="barres" id="barres-tranches"></ul>
+        <p class="petit texte-gris" style="margin: 16px 0 0">Seulement les agressions dont l'heure est connue.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4) À savoir -->
+  <section style="margin-top: 72px">
+    <h2 style="font-size: 34px; margin: 0 0 20px">À savoir</h2>
+    <p class="carte-blanche texte-gris" style="margin: 0; background: var(--gris-clair)">
+      <strong>Une estimation, pas une certitude.</strong> Le risque repose sur les faits rapportés par la presse :
+      beaucoup d'incidents ne sont jamais publiés. SafeZone évalue des zones et des horaires, jamais des personnes.
+    </p>
+  </section>
+</main>
+
+<!-- Pied de page : le projet et les numéros d'urgence -->
+<footer class="pied">
+  <div>
+    <span><strong>SafeZone Abidjan</strong><br>Savoir avant de sortir.</span>
+    <span><strong>Numéros d'urgence</strong><br>Police secours : 110 · 111 · 170<br>Sapeurs-pompiers : 180 · SAMU : 185</span>
+  </div>
+</footer>
+
+<script src="commun.js?v=4"></script>
+<script>
+
+// ---------- Remplir les listes du formulaire (fonctions de commun.js) ----------
+async function preparerFormulaire() {
+  await preparerListesLieu("commune", "quartier");
+  remplirHeures("heure");
+}
+
+// Le bouton « Calculer le risque » ouvre la page « Calculer mon risque », qui affiche le résultat
+document.getElementById("formulaire").addEventListener("submit", evenement => {
+  evenement.preventDefault();
+  const commune = document.getElementById("commune").value;
+  const quartier = document.getElementById("quartier").value;
+  const heure = document.getElementById("heure").value;
+  const deplacement = document.getElementById("deplacement").value;
+  const eclairage = document.getElementById("eclairage").value;
+  // On passe les choix dans l'adresse : carte.html?commune=Cocody&heure=22&quartier=Angré&deplacement=pied...
+  location.href = `carte.html?commune=${encodeURIComponent(commune)}&heure=${heure}` +
+                  (quartier ? `&quartier=${encodeURIComponent(quartier)}` : "") +
+                  `&deplacement=${deplacement}&eclairage=${eclairage}`;
+});
+
+// ---------- « Utiliser ma position » : GPS du navigateur -> commune la plus proche ----------
+document.getElementById("ma-position").addEventListener("click", () => {
+  const message = document.getElementById("message-position");
+  if (!navigator.geolocation) {
+    message.textContent = "Votre navigateur ne permet pas la localisation.";
+    return;
+  }
+  message.textContent = "Recherche de votre position…";
+  navigator.geolocation.getCurrentPosition(async position => {
+    const heure = new Date().getHours();
+    try {
+      // L'API trouve la commune la plus proche et calcule son risque maintenant
+      const risque = await lireApi(`/risque/position?latitude=${position.coords.latitude}` +
+                                   `&longitude=${position.coords.longitude}&heure=${heure}`);
+      location.href = `carte.html?commune=${encodeURIComponent(risque.commune)}&heure=${heure}`;
+    } catch (erreur) {
+      message.textContent = "Position hors du District d'Abidjan, ou API arrêtée.";
+    }
+  }, () => {
+    message.textContent = "Localisation refusée : choisissez votre commune dans la liste.";
+  });
+});
+
+// ---------- Les 5 communes les plus à risque à 20 h ----------
+async function afficherClassement() {
+  const resultats = await lireApi("/risque/toutes?heure=20");
+  document.getElementById("classement").innerHTML = resultats.slice(0, 5).map(r => `
+    <li style="display: flex; justify-content: space-between; align-items: center; gap: 12px;
+               padding: 10px 12px; border-radius: 10px; border: 1px solid var(--bordure)">
+      <a href="carte.html?commune=${encodeURIComponent(r.commune)}&heure=20"
+         style="color: var(--bleu-nuit); font-weight: 600; text-decoration: none">${proteger(r.commune)}</a>
+      ${pastille(r.niveau)}
+    </li>`).join("");
+}
+
+// ---------- Statistiques ----------
+// Des barres en HTML : la plus grande valeur prend 100 % de la largeur, les autres en proportion
+function barres(lignes, cle) {
+  const maximum = Math.max(...lignes.map(l => l.nombre));
+  return lignes.map(l => `
+    <li><span>${proteger(l[cle])}</span>
+        <span class="barre" style="width: ${(100 * l.nombre / maximum).toFixed(0)}%"></span>
+        <span class="valeur">${l.nombre}</span></li>`).join("");
+}
+
+// Les 4 chiffres clés et les 2 graphiques en barres
+async function afficherStatistiques() {
+  const stats = await lireApi("/statistiques");
+  const heureConnue = stats.par_tranche_horaire.reduce((total, t) => total + t.nombre, 0);
+  const nuit = stats.par_tranche_horaire.find(t => t.tranche_horaire === "nuit")?.nombre || 0;
+
+  document.getElementById("chiffres").innerHTML = `
+    <div class="carte-blanche chiffre"><strong>${stats.total_agressions}</strong>
+      <span class="texte-gris">agressions analysées (${stats.periode.debut}–${stats.periode.fin})</span></div>
+    <div class="carte-blanche chiffre"><strong>${proteger(stats.par_commune[0].commune)}</strong>
+      <span class="texte-gris">commune la plus touchée (${stats.par_commune[0].nombre})</span></div>
+    <div class="carte-blanche chiffre"><strong>${Math.round(100 * nuit / heureConnue)} %</strong>
+      <span class="texte-gris">des agressions ont lieu la nuit (heure connue)</span></div>
+    <div class="carte-blanche chiffre"><strong>${proteger(stats.par_type[0].type_agression)}</strong>
+      <span class="texte-gris">type le plus fréquent</span></div>`;
+
+  document.getElementById("barres-communes").innerHTML = barres(stats.par_commune, "commune");
+  document.getElementById("barres-tranches").innerHTML = barres(stats.par_tranche_horaire, "tranche_horaire");
+}
+
+// ---------- Lancement : les 3 parties se chargent en même temps ----------
+Promise.all([preparerFormulaire(), afficherClassement(), afficherStatistiques()])
+  .catch(erreur => {
+    document.getElementById("chiffres").innerHTML = messageApiArretee(erreur);
+    document.getElementById("classement").innerHTML = "";
+  });
+</script>
+</body>
+</html>

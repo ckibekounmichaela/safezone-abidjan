@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SafeZone Abidjan — Assistant IA</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=Public+Sans:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="style.css?v=4">
+<style>
+  .conversation { display: flex; flex-direction: column; gap: 16px; padding: 24px; background: #F7F8FA;
+                  min-height: 360px; max-height: 60vh; overflow-y: auto; }
+  .bulle-moi { align-self: flex-end; max-width: 75%; padding: 12px 16px; border-radius: 16px 16px 4px 16px;
+               background: var(--bleu-nuit); color: #fff; }
+  .bulle-ia { align-self: flex-start; max-width: 86%; padding: 16px 18px; border-radius: 16px 16px 16px 4px;
+              background: #fff; border: 1px solid var(--bordure); }
+  .outils { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--gris-clair); font-size: 13px; color: #4A5868; }
+  .outils code { padding: 2px 8px; border-radius: 6px; background: var(--gris-clair); }
+  .suggestion { min-height: 40px; padding: 6px 14px; border-radius: 999px; border: 1px solid #B8C2CD;
+                background: #fff; font: inherit; font-size: 14px; cursor: pointer; }
+  .suggestion:hover { background: var(--gris-clair); }
+</style>
+</head>
+<body>
+
+<header class="entete">
+  <a class="logo" href="index.html">SafeZone <span>Abidjan</span></a>
+  <nav class="menu" aria-label="Navigation principale">
+    <a href="index.html">Accueil</a>
+    <a href="carte.html">Calculer mon risque</a>
+    <a href="incidents.html">Incidents</a>
+    <a href="assistant.html" class="actif">Assistant</a>
+    <a href="compte.html">Mon compte</a>
+  </nav>
+</header>
+
+<main class="contenu" style="max-width: 900px">
+  <!-- La fenêtre de discussion : en-tête, conversation, puis suggestions et champ de saisie -->
+  <section class="carte-blanche" style="padding: 0; overflow: hidden">
+    <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 16px 24px; border-bottom: 1px solid var(--gris-clair)">
+      <div>
+        <h1 style="margin: 0; font-size: 22px">Votre assistant sécurité</h1>
+        <span class="petit texte-gris">Posez vos questions sur la sécurité de vos déplacements à Abidjan</span>
+      </div>
+      <button type="button" class="bouton bouton-clair" id="nouvelle">Nouvelle conversation</button>
+    </div>
+
+    <!-- La conversation : les bulles sont ajoutées par le script plus bas -->
+    <div class="conversation" id="conversation" aria-live="polite">
+      <div class="bulle-ia">Bonjour ! Dites-moi où et quand vous voulez aller, par exemple :
+        « Est-ce risqué d'aller à Adjamé à 22 h ? »</div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px; padding: 16px 24px 20px; border-top: 1px solid var(--gris-clair)">
+      <!-- Des exemples de questions : un clic les envoie (une par capacité de l'agent) -->
+      <div style="display: flex; flex-wrap: wrap; gap: 8px">
+        <button type="button" class="suggestion">À quelle heure c'est le moins risqué d'aller à Angré ?</button>
+        <button type="button" class="suggestion">Qu'est-ce qui se passe à Niangon ?</button>
+        <button type="button" class="suggestion">Je vais de Yopougon au Plateau vers 22h, c'est risqué ?</button>
+        <button type="button" class="suggestion">Quel quartier de Cocody est le plus calme ce soir ?</button>
+        <button type="button" class="suggestion">Est-ce qu'Abobo devient plus dangereux ?</button>
+      </div>
+      <!-- Le champ de la question et le bouton « Envoyer » -->
+      <form id="formulaire" style="display: flex; gap: 10px">
+        <label for="question" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Votre question</label>
+        <input id="question" type="text" placeholder="Posez votre question : un lieu, une heure…" style="flex: 1; min-width: 0" autocomplete="off" maxlength="500">
+        <button class="bouton" type="submit" id="envoyer">Envoyer</button>
+      </form>
+      <p class="petit texte-gris" style="margin: 0">Estimation statistique, pas une garantie. En cas d'urgence : Police 110 · 111 · 170.</p>
+    </div>
+  </section>
+</main>
+
+<script src="commun.js?v=4"></script>
+<script>
+const zoneConversation = document.getElementById("conversation");
+const champQuestion = document.getElementById("question");
+const boutonEnvoyer = document.getElementById("envoyer");
+let historique = [];
+
+// Si l'agent écrit **gras**, on le transforme en vrai gras ; les retours à la ligne deviennent <br>
+function mettreEnForme(texte) {
+  return proteger(texte)
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\n/g, "<br>");
+}
+
+// Ajoute une bulle (la mienne ou celle de l'IA) en bas de la conversation
+function ajouterBulle(classe, html) {
+  const bulle = document.createElement("div");
+  bulle.className = classe;
+  bulle.innerHTML = html;
+  zoneConversation.appendChild(bulle);
+  zoneConversation.scrollTop = zoneConversation.scrollHeight;
+  return bulle;
+}
+
+// Envoie une question à l'agent et affiche sa réponse
+async function poserQuestion(question) {
+  question = question.trim();
+  if (!question) return;
+  ajouterBulle("bulle-moi", proteger(question));
+  const attente = ajouterBulle("bulle-ia chargement", "L'assistant réfléchit…");
+  champQuestion.value = "";
+  boutonEnvoyer.disabled = true;
+
+  try {
+    const resultat = await envoyerApi("/assistant", { question, historique });
+    const consultees = resultat.donnees_consultees || [];
+    attente.className = "bulle-ia";
+    attente.innerHTML = mettreEnForme(resultat.reponse) + (consultees.length
+      ? `<div class="outils">Données consultées : ${proteger(consultees.join(", "))}</div>` : "");
+    historique.push({ role: "user", contenu: question },
+                    { role: "assistant", contenu: resultat.reponse });
+  } catch (erreur) {
+    attente.className = "bulle-ia message-erreur";
+    attente.textContent = "L'assistant ne répond pas : " + erreur.message;
+  } finally {
+    boutonEnvoyer.disabled = false;
+    champQuestion.focus();
+  }
+}
+
+// Le formulaire (touche Entrée ou bouton « Envoyer »)
+document.getElementById("formulaire").addEventListener("submit", evenement => {
+  evenement.preventDefault();
+  poserQuestion(champQuestion.value);
+});
+// Les questions d'exemple : un clic envoie leur texte
+document.querySelectorAll(".suggestion").forEach(bouton =>
+  bouton.addEventListener("click", () => poserQuestion(bouton.textContent)));
+// « Nouvelle conversation » : on oublie l'historique
+document.getElementById("nouvelle").addEventListener("click", () => {
+  historique = [];
+  zoneConversation.innerHTML = `<div class="bulle-ia">Nouvelle conversation. Quelle est votre question ?</div>`;
+});
+
+// Question envoyée depuis la page « Calculer mon risque » (assistant.html?question=...)
+const questionDepuisCarte = new URLSearchParams(location.search).get("question");
+if (questionDepuisCarte) poserQuestion(questionDepuisCarte);
+</script>
+</body>
+</html>

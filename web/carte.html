@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SafeZone Abidjan — Calculer mon risque</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=Public+Sans:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="style.css?v=4">
+<style>
+  #carte { height: 460px; border-radius: 12px; }
+</style>
+</head>
+<body>
+
+<header class="entete">
+  <a class="logo" href="index.html">SafeZone <span>Abidjan</span></a>
+  <nav class="menu" aria-label="Navigation principale">
+    <a href="index.html">Accueil</a>
+    <a href="carte.html" class="actif">Calculer mon risque</a>
+    <a href="incidents.html">Incidents</a>
+    <a href="assistant.html">Assistant</a>
+    <a href="compte.html">Mon compte</a>
+  </nav>
+</header>
+
+<main class="contenu">
+  <h1 style="margin: 0 0 6px; font-size: 36px">Calculer mon risque</h1>
+  <p class="texte-gris" style="margin: 0 0 20px">
+    Choisissez où vous allez, à quelle heure et comment, puis cliquez sur « Calculer le risque ».
+  </p>
+
+  <!-- 1) Le formulaire : les 5 étapes + le bouton -->
+  <form id="formulaire" class="carte-blanche formulaire-risque">
+    <div class="champ">
+      <label for="commune">1. Où allez-vous ? (commune)</label>
+      <select id="commune"></select>
+    </div>
+    <div class="champ">
+      <label for="quartier">2. Quartier</label>
+      <select id="quartier"></select>
+    </div>
+    <div class="champ">
+      <label for="heure">3. À quelle heure ?</label>
+      <select id="heure"></select>
+    </div>
+    <div class="champ">
+      <label for="deplacement">4. Comment vous déplacez-vous ?</label>
+      <select id="deplacement">
+        <option value="">Je ne sais pas encore</option>
+        <option value="pied">À pied</option>
+        <option value="moto">À moto</option>
+        <option value="taxi">Taxi / woro-woro / gbaka</option>
+        <option value="voiture">En voiture</option>
+        <option value="bus">En bus</option>
+      </select>
+    </div>
+    <div class="champ">
+      <label for="eclairage">5. La rue est-elle éclairée ?</label>
+      <select id="eclairage">
+        <option value="">Je ne sais pas</option>
+        <option value="eclairee">Oui, éclairée</option>
+        <option value="sombre">Non, sombre</option>
+      </select>
+    </div>
+    <button class="bouton" type="submit" id="bouton-calculer">Calculer le risque</button>
+  </form>
+
+  <!-- 2) Le résultat (à gauche) et la carte (à droite) -->
+  <div class="ligne" style="margin-top: 20px">
+    <article class="carte-blanche" id="resultat" style="flex: 1 1 340px">
+      <p class="texte-gris" style="margin: 0">Le résultat s'affichera ici.</p>
+    </article>
+    <div class="carte-blanche" style="flex: 2 1 460px; padding: 12px"><div id="carte"></div></div>
+  </div>
+</main>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="commun.js?v=4"></script>
+<script>
+
+// Couleur de chaque niveau sur la carte
+const COULEURS = { "faible": "#2E8B57", "moyen": "#E0A100", "élevé": "#C0392B" };
+let positions = {};
+let cercles = [];
+
+// ---------- La carte d'Abidjan (fond OpenStreetMap) ----------
+const carte = L.map("carte").setView([5.345, -4.02], 11);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  attribution: "© OpenStreetMap",
+}).addTo(carte);
+
+
+// ---------- Étape 2 : le clic sur « Calculer le risque » ----------
+document.getElementById("formulaire").addEventListener("submit", evenement => {
+  evenement.preventDefault();
+  calculer();
+});
+
+
+// ---------- Étape 3 : calculer et afficher le risque ----------
+async function calculer() {
+  // Ce que l'utilisateur a choisi dans les 5 listes
+  const commune = document.getElementById("commune").value;
+  const quartier = document.getElementById("quartier").value;
+  const heure = document.getElementById("heure").value;
+  const deplacement = document.getElementById("deplacement").value;
+  const eclairage = document.getElementById("eclairage").value;
+
+  const bouton = document.getElementById("bouton-calculer");
+  const zone = document.getElementById("resultat");
+  bouton.disabled = true;
+  bouton.textContent = "Calcul…";
+  zone.innerHTML = `<p class="chargement">Calcul du risque…</p>`;
+
+  // L'adresse à demander à l'API : celle du quartier, ou celle de la commune entière
+  let adresse = `/risque?commune=${encodeURIComponent(commune)}&heure=${heure}`;
+  if (quartier) {
+    adresse = `/risque/quartier?quartier=${encodeURIComponent(quartier)}`
+            + `&commune=${encodeURIComponent(commune)}&heure=${heure}`;
+  }
+  adresse += `&deplacement=${deplacement}&eclairage=${eclairage}`;
+
+  try {
+    const risque = await lireApi(adresse);
+    const toutes = await lireApi(`/risque/toutes?heure=${heure}`);
+    afficherResultat(risque);
+    dessinerCarte(toutes, commune);
+    enregistrerDansHistorique(risque, deplacement, eclairage);
+  } catch (erreur) {
+    zone.innerHTML = messageApiArretee(erreur);
+  }
+  bouton.disabled = false;
+  bouton.textContent = "Calculer le risque";
+}
+
+
+// Si l'utilisateur est connecté, on garde ce calcul dans « Mes recherches » (page Mon compte).
+// Sans compte, on ne garde rien. Si l'enregistrement échoue, ce n'est pas grave : le score reste affiché.
+async function enregistrerDansHistorique(risque, deplacement, eclairage) {
+  const compte = monCompte();
+  if (!compte) return;
+  try {
+    await envoyerApi("/recherches", {
+      commune: risque.commune, quartier: risque.quartier ?? null, heure: risque.heure,
+      deplacement, eclairage, score: risque.score, niveau: risque.niveau,
+    }, "POST", compte.jeton);
+  } catch (erreur) {}
+}
+
+
+// Le résultat : seulement ce qui est utile à l'utilisateur
+//   le lieu et l'heure, le niveau avec sa barre de progression, le conseil, et 2 phrases « À savoir »
+function afficherResultat(risque) {
+  const lieu = risque.quartier || risque.commune;
+  const question = `Est-ce risqué d'aller à ${lieu}`
+                 + (risque.quartier ? ` (${risque.commune})` : "") + ` vers ${risque.heure}h ?`;
+
+  // La barre de progression : sa partie remplie a une largeur de « score » % (78/100 -> 78 %)
+  document.getElementById("resultat").innerHTML = `
+    <h2 style="margin: 0; font-size: 30px">${proteger(lieu)}</h2>
+    <p class="texte-gris" style="margin: 4px 0 0">
+      ${risque.quartier ? `${proteger(risque.commune)} · ` : ""}à ${risque.heure} h
+    </p>
+
+    <div class="bandeau-risque ${classeNiveau(risque.niveau)}">
+      <div class="bandeau-ligne"><span>Risque ${proteger(risque.niveau)}</span><span>${risque.score}/100</span></div>
+      <div class="jauge"><div class="jauge-remplie" style="width: ${risque.score}%"></div></div>
+      <div class="jauge-legende"><span>Faible</span><span>Moyen</span><span>Élevé</span></div>
+    </div>
+
+    <p style="margin: 0; font-size: 18px; font-weight: 600">${proteger(risque.conseil)}</p>
+
+    <h3 style="margin: 20px 0 6px; font-size: 17px; font-family: inherit">À savoir</h3>
+    <ul class="texte-gris" style="margin: 0; padding-left: 20px">
+      ${risque.a_savoir.map(phrase => `<li>${proteger(phrase)}</li>`).join("")}
+    </ul>
+
+    <a class="bouton bouton-sombre" style="margin-top: 20px"
+       href="assistant.html?question=${encodeURIComponent(question)}">Demander conseil à l'assistant</a>
+    <p class="petit texte-gris" style="margin: 16px 0 0">${proteger(risque.attention)}</p>`;
+}
+
+
+// La carte : un rond par commune, de la couleur de son niveau à l'heure choisie
+function dessinerCarte(toutes, communeChoisie) {
+  cercles.forEach(cercle => cercle.remove());
+  cercles = toutes.map(r => {
+    const cercle = L.circleMarker(positions[r.commune], {
+      radius: 10 + r.score / 5,
+      color: r.commune === communeChoisie ? "#0E1A2B" : COULEURS[r.niveau],
+      fillColor: COULEURS[r.niveau], fillOpacity: 0.5,
+      weight: r.commune === communeChoisie ? 4 : 2,
+    }).addTo(carte);
+    cercle.bindTooltip(`${r.commune} : risque ${r.niveau} (${r.score}/100)`);
+    return cercle;
+  });
+  carte.setView(positions[communeChoisie], 12);
+}
+
+
+// ---------- Étape 1 : au chargement de la page, remplir les 3 listes ----------
+async function demarrer() {
+  try {
+    const communes = await lireApi("/communes");
+    communes.forEach(c => positions[c.nom] = [c.latitude, c.longitude]);
+    const choisirLieu = await preparerListesLieu("commune", "quartier");
+    remplirHeures("heure");
+
+    // Venue depuis l'accueil (carte.html?commune=...&quartier=...&heure=...) : on calcule tout de suite
+    const parametres = new URLSearchParams(location.search);
+    if (parametres.get("commune")) {
+      choisirLieu(parametres.get("commune"), parametres.get("quartier"));
+      if (parametres.get("heure")) document.getElementById("heure").value = parametres.get("heure");
+      document.getElementById("deplacement").value = parametres.get("deplacement") ?? "";
+      document.getElementById("eclairage").value = parametres.get("eclairage") ?? "";
+      calculer();
+    }
+  } catch (erreur) {
+    document.getElementById("resultat").innerHTML = messageApiArretee(erreur);
+  }
+}
+
+demarrer();
+</script>
+</body>
+</html>

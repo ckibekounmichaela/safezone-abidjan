@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SafeZone Abidjan — Incidents récents</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=Public+Sans:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="style.css?v=4">
+</head>
+<body>
+
+<header class="entete">
+  <a class="logo" href="index.html">SafeZone <span>Abidjan</span></a>
+  <nav class="menu" aria-label="Navigation principale">
+    <a href="index.html">Accueil</a>
+    <a href="carte.html">Calculer mon risque</a>
+    <a href="incidents.html" class="actif">Incidents</a>
+    <a href="assistant.html">Assistant</a>
+    <a href="compte.html">Mon compte</a>
+  </nav>
+</header>
+
+<main class="contenu">
+  <h1 style="margin: 0 0 6px; font-size: 36px">Incidents récents</h1>
+  <p class="texte-gris" style="margin: 0 0 24px">Les agressions rapportées par la presse, de la plus récente à la plus ancienne.</p>
+
+  <!-- Les filtres : la commune et le nombre d'agressions à afficher -->
+  <form id="filtres" class="carte-blanche" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; margin-bottom: 24px">
+    <div class="champ" style="flex: 1 1 220px">
+      <label for="commune">Commune</label>
+      <select id="commune"><option value="">Toutes les communes</option></select>
+    </div>
+    <div class="champ" style="flex: 0 1 160px">
+      <label for="nombre">Nombre</label>
+      <select id="nombre"><option>20</option><option>50</option><option>100</option></select>
+    </div>
+  </form>
+
+  <!-- La liste des agressions : remplie par le script plus bas -->
+  <div id="liste" style="display: flex; flex-direction: column; gap: 12px">
+    <p class="chargement">Chargement…</p>
+  </div>
+</main>
+
+<script src="commun.js?v=4"></script>
+<script>
+const listeCommunes = document.getElementById("commune");
+const listeNombre = document.getElementById("nombre");
+
+// Le HTML d'une agression : type, date, lieu, titre, résumé et lien vers l'article
+function carteIncident(a) {
+  return `
+    <article class="carte-blanche" style="display: flex; flex-direction: column; gap: 8px">
+      <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+        <span class="pastille moyen">${proteger(a.type_agression)}</span>
+        <span class="petit texte-gris">${dateFr(a.date)} · ${proteger(a.commune || "commune inconnue")}
+          ${a.quartier ? "· " + proteger(a.quartier) : ""}
+          ${a.tranche_horaire !== "inconnue" ? "· " + proteger(a.tranche_horaire) : ""}</span>
+      </div>
+      <h2 style="margin: 0; font-size: 19px; font-family: inherit">${proteger(a.titre)}</h2>
+      ${a.resume ? `<p class="texte-gris" style="margin: 0">${proteger(a.resume)}</p>` : ""}
+      <a href="${proteger(a.lien_article)}" target="_blank" rel="noopener" class="petit">Lire l'article de presse</a>
+    </article>`;
+}
+
+// Demande les agressions à l'API et les affiche
+async function afficher() {
+  const zone = document.getElementById("liste");
+  zone.innerHTML = `<p class="chargement">Chargement…</p>`;
+  let chemin = `/agressions?limite=${listeNombre.value}`;
+  if (listeCommunes.value) chemin += `&commune=${encodeURIComponent(listeCommunes.value)}`;
+  try {
+    const agressions = await lireApi(chemin);
+    zone.innerHTML = agressions.length
+      ? agressions.map(carteIncident).join("")
+      : `<p class="texte-gris">Aucune agression trouvée.</p>`;
+  } catch (erreur) {
+    zone.innerHTML = messageApiArretee(erreur);
+  }
+}
+
+// Au chargement : remplir la liste des communes, puis afficher
+lireApi("/communes").then(communes => {
+  communes.map(c => c.nom).sort((a, b) => a.localeCompare(b, "fr"))
+    .forEach(nom => listeCommunes.add(new Option(nom, nom)));
+  listeCommunes.value = new URLSearchParams(location.search).get("commune") || "";
+  afficher();
+}).catch(erreur => {
+  document.getElementById("liste").innerHTML = messageApiArretee(erreur);
+});
+
+listeCommunes.addEventListener("change", afficher);
+listeNombre.addEventListener("change", afficher);
+</script>
+</body>
+</html>
