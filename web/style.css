@@ -1,0 +1,154 @@
+/* =============================================================
+   SafeZone Abidjan — styles communs à toutes les pages
+   Les couleurs et polices sont celles de la maquette.
+
+   Rappel : une règle CSS = « à quoi elle s'applique { propriété: valeur; } »
+     .nom     -> les éléments qui ont class="nom"
+     #nom     -> l'élément qui a id="nom"
+     a:hover  -> un lien quand la souris passe dessus
+   ============================================================= */
+
+/* ---------- Les couleurs, rangées dans des « variables » (on les utilise avec var(--nom)) ---------- */
+:root {
+  --bleu-nuit: #0E1A2B;
+  --bleu-nuit-2: #1F3048;
+  --fond: #F2F4F6;
+  --blanc: #FFFFFF;
+  --bordure: #D9DEE4;
+  --gris-texte: #3B4A5C;
+  --gris-clair: #E3E8EE;
+  --orange: #C2550F;
+  --orange-fonce: #8F3D08;
+  --or: #F2B04C;
+
+  /* Niveaux de risque : couleur de fond + couleur du texte */
+  --faible-fond: #DDF1E6;  --faible-texte: #1E5E3F;
+  --moyen-fond: #FCEBCB;   --moyen-texte: #7A4A05;
+  --eleve-fond: #F6D5D2;   --eleve-texte: #8E1D17;
+}
+
+/* La largeur d'un élément compte sa bordure et ses marges intérieures (plus facile à prévoir) */
+* { box-sizing: border-box; }
+
+/* Toute la page */
+body {
+  margin: 0;
+  background: var(--fond);
+  color: var(--bleu-nuit);
+  font-family: 'Public Sans', sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+/* Les titres utilisent la police de la maquette */
+h1, h2, h3, .titre { font-family: 'Bricolage Grotesque', sans-serif; line-height: 1.15; }
+a { color: var(--orange); }
+a:hover { color: var(--orange-fonce); }
+
+/* ---------- En-tête (bandeau bleu nuit en haut de chaque page) ---------- */
+.entete {
+  display: flex; flex-wrap: wrap;
+  align-items: center; justify-content: space-between;
+  gap: 16px; padding: 14px 32px;
+  background: var(--bleu-nuit); color: var(--blanc);
+}
+/* Le logo « SafeZone Abidjan » */
+.logo { display: flex; align-items: center; gap: 10px; color: var(--blanc); text-decoration: none;
+        font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 20px; }
+.logo:hover { color: var(--blanc); }
+.logo span { color: var(--or); }
+/* Le menu : les liens côte à côte */
+.menu { display: flex; flex-wrap: wrap; gap: 4px; }
+.menu a { padding: 10px 14px; border-radius: 8px; color: #C9D3DE; text-decoration: none; }
+.menu a:hover { color: var(--blanc); background: var(--bleu-nuit-2); }
+.menu a.actif { color: var(--blanc); background: var(--bleu-nuit-2); }
+
+/* ---------- Mise en page ---------- */
+.contenu { max-width: 1200px; margin: 0 auto; padding: 40px 32px; }
+/* Les « cartes » blanches : fond blanc, fine bordure, coins arrondis */
+.carte-blanche { background: var(--blanc); border: 1px solid var(--bordure); border-radius: 16px; padding: 24px; }
+/* Une grille : autant de colonnes de 240 px minimum que la largeur le permet */
+.grille { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; }
+/* Des éléments côte à côte, qui passent à la ligne sur un petit écran */
+.ligne { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; }
+.texte-gris { color: var(--gris-texte); }
+.petit { font-size: 14px; }
+
+/* ---------- Boutons et champs ---------- */
+/* Le bouton orange principal */
+.bouton {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 48px; padding: 0 22px;
+  border: 0; border-radius: 10px;
+  background: var(--orange); color: var(--blanc); font: inherit; font-weight: 700;
+  text-decoration: none; cursor: pointer;
+}
+.bouton:hover { background: var(--orange-fonce); color: var(--blanc); }
+.bouton:disabled { opacity: 0.6; cursor: wait; }
+/* Le bouton clair (blanc avec bordure) */
+.bouton-clair { background: var(--blanc); color: var(--bleu-nuit); border: 1px solid #B8C2CD; }
+.bouton-clair:hover { background: var(--gris-clair); color: var(--bleu-nuit); }
+
+label { font-weight: 600; font-size: 14px; }
+/* Les listes déroulantes et les champs de texte */
+select, input[type="text"], input[type="email"], input[type="password"] {
+  height: 48px; padding: 0 12px; border-radius: 10px; border: 1px solid #B8C2CD;
+  background: var(--blanc); font: inherit; color: var(--bleu-nuit);
+}
+.champ { display: flex; flex-direction: column; gap: 6px; }
+
+/* ---------- Pastilles de risque (« Risque élevé » arrondi et coloré) ---------- */
+.pastille { display: inline-block; padding: 3px 12px; border-radius: 999px; font-size: 14px; font-weight: 700; }
+.pastille.faible { background: var(--faible-fond); color: var(--faible-texte); }
+.pastille.moyen  { background: var(--moyen-fond);  color: var(--moyen-texte); }
+.pastille.eleve  { background: var(--eleve-fond);  color: var(--eleve-texte); }
+
+/* ---------- Calculer mon risque : formulaire et résultat ---------- */
+/* Les 3 listes + le bouton sur une ligne (ils passent à la ligne sur un petit écran) */
+.formulaire-risque { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; align-items: end; }
+/* Le grand bandeau « Risque élevé   78/100 », de la couleur du niveau, avec sa barre de progression */
+.bandeau-risque { margin: 16px 0; padding: 14px 18px 12px; border-radius: 12px; }
+.bandeau-risque.faible { background: var(--faible-fond); color: var(--faible-texte); }
+.bandeau-risque.moyen  { background: var(--moyen-fond);  color: var(--moyen-texte); }
+.bandeau-risque.eleve  { background: var(--eleve-fond);  color: var(--eleve-texte); }
+/* La ligne « Risque élevé » à gauche, « 78/100 » à droite, en gros */
+.bandeau-ligne { display: flex; justify-content: space-between; gap: 12px;
+                 font-family: 'Bricolage Grotesque', sans-serif; font-size: 26px; font-weight: 700; }
+/* La barre de progression : un fond clair, rempli de 0 à 100 avec la couleur du niveau */
+.jauge { height: 12px; margin-top: 10px; border-radius: 999px; background: rgba(255, 255, 255, 0.75); overflow: hidden; }
+.jauge-remplie { height: 100%; border-radius: 999px; background: currentColor; }
+/* Sous la barre : où commencent « moyen » (20) et « élevé » (50) */
+.jauge-legende { display: flex; margin-top: 4px; font-size: 13px; font-weight: 600; }
+.jauge-legende span:nth-child(1) { width: 20%; }
+.jauge-legende span:nth-child(2) { width: 30%; }
+.jauge-legende span:nth-child(3) { width: 50%; }
+/* Le bouton bleu nuit (« Demander conseil à l'assistant ») */
+.bouton-sombre { background: var(--bleu-nuit); }
+.bouton-sombre:hover { background: var(--bleu-nuit-2); }
+
+/* ---------- Chiffres clés (page d'accueil) ---------- */
+.chiffre { display: flex; flex-direction: column; gap: 4px; }
+.chiffre strong { font-family: 'Bricolage Grotesque', sans-serif; font-size: 40px; line-height: 1; }
+
+/* ---------- Barres horizontales (statistiques de l'accueil) ---------- */
+.barres { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+/* Chaque ligne : le nom (130 px), la barre (le reste), le nombre (40 px) */
+.barres li { display: grid; grid-template-columns: 130px 1fr 40px; align-items: center; gap: 10px; font-size: 14px; }
+.barres .barre { height: 14px; border-radius: 4px; background: #2a78d6; }
+.barres .valeur { text-align: right; color: var(--gris-texte); }
+
+/* ---------- Messages ---------- */
+.message-erreur { padding: 14px 16px; border-radius: 10px; background: var(--eleve-fond); color: var(--eleve-texte); }
+.chargement { color: var(--gris-texte); font-style: italic; }
+
+/* ---------- Pied de page ---------- */
+.pied { margin-top: 56px; padding: 32px; background: var(--bleu-nuit); color: #C9D3DE; font-size: 14px; }
+.pied > div { max-width: 1200px; margin: 0 auto; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 24px; }
+.pied strong { color: var(--blanc); }
+
+/* ---------- Téléphone : ces règles s'appliquent seulement si l'écran fait moins de 640 px de large ---------- */
+@media (max-width: 640px) {
+  .entete, .contenu { padding-left: 16px; padding-right: 16px; }
+  h1 { font-size: 34px !important; }
+  .barres li { grid-template-columns: 100px 1fr 36px; }
+}

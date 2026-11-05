@@ -1,0 +1,20 @@
+# Fichiers à ne JAMAIS envoyer sur GitHub :
+# .env contient la clé DeepSeek et le mot de passe PostgreSQL
+.env
+
+# Fichiers recréés automatiquement (inutile de les envoyer)
+__pycache__/
+*.pyc
+safezone_mobile/build/
+safezone_mobile/.dart_tool/
+# l'appli desktop fabriquée (97 Mo) : on la recrée avec PyInstaller (voir README)
+*.exe
+
+# Le texte complet des articles de presse : il appartient aux journaux et cite des personnes.
+# Il reste sur cet ordinateur ; scraping.py puis nettoyage.py le recréent.
+donnees/brut/articles_bruts.csv
+donnees/articles_propres.csv
+
+# Fichiers personnels
+*.pdf
+FICHE_REVISION.md

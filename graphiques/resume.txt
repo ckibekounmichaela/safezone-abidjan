@@ -1,0 +1,13 @@
+CHIFFRES CLÉS — SafeZone Abidjan
+Agressions analysées : 550 (de 2007 à 2026)
+Commune connue : 519 (94%)
+Heure connue : 289 (53%)
+Quartier connu : 344 (63%) — de 8 % à 77 % selon la commune
+Communes les plus touchées : Yopougon (133), Cocody (107), Abobo (91)
+Part des agressions la nuit (heure connue) : 52%
+Type le plus fréquent : meurtre
+Arme la plus fréquente : arme blanche
+
+Pour le modèle (commune × trimestre) :
+  cases possibles : 988, cases avec au moins une agression : 280
+  cases sans aucune agression : 72%

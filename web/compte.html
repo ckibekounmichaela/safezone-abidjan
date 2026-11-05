@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SafeZone Abidjan — Mon compte</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=Public+Sans:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="style.css?v=4">
+<style>
+  .onglets { display: flex; gap: 6px; padding: 6px; border: 1px solid var(--bordure); border-radius: 12px; margin-bottom: 20px; }
+  .onglets button { flex: 1; height: 44px; border: 0; border-radius: 8px; background: transparent; font: inherit;
+                    font-weight: 700; color: var(--bleu-nuit); cursor: pointer; }
+  .onglets button.actif { background: var(--bleu-nuit); color: var(--blanc); }   /* l'onglet choisi */
+  .formulaire { display: flex; flex-direction: column; gap: 14px; }
+  .recherche { display: flex; justify-content: space-between; align-items: center; gap: 12px;
+               padding: 14px 16px; border: 1px solid var(--bordure); border-radius: 12px; }
+  .lien-rouge { background: none; border: 0; padding: 0; font: inherit; color: #8E1D17; cursor: pointer; text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<header class="entete">
+  <a class="logo" href="index.html">SafeZone <span>Abidjan</span></a>
+  <nav class="menu" aria-label="Navigation principale">
+    <a href="index.html">Accueil</a>
+    <a href="carte.html">Calculer mon risque</a>
+    <a href="incidents.html">Incidents</a>
+    <a href="assistant.html">Assistant</a>
+    <a href="compte.html" class="actif">Mon compte</a>
+  </nav>
+</header>
+
+<main class="contenu" style="max-width: 760px">
+  <h1 style="margin: 0 0 6px; font-size: 36px">Mon compte</h1>
+
+  <!-- 1) Pour un invité : se connecter ou créer un compte -->
+  <section id="zone-invite" class="carte-blanche" hidden>
+    <p class="texte-gris" style="margin: 0 0 16px">
+      Le calcul du risque marche sans compte. Avec un compte, vos recherches sont gardées et vous les retrouvez sur le site et sur l'appli mobile.
+    </p>
+    <div class="onglets">
+      <button type="button" id="onglet-connexion" class="actif">Se connecter</button>
+      <button type="button" id="onglet-inscription">Créer un compte</button>
+    </div>
+    <form id="formulaire-compte" class="formulaire">
+      <div class="champ" id="champ-nom" hidden>
+        <label for="nom">Votre nom</label>
+        <input type="text" id="nom" maxlength="100" placeholder="ex. Awa Koné" autocomplete="name">
+      </div>
+      <div class="champ">
+        <label for="email">Adresse e-mail</label>
+        <input type="email" id="email" maxlength="254" placeholder="nom@exemple.com" autocomplete="email" required>
+      </div>
+      <div class="champ">
+        <label for="mot-de-passe">Mot de passe</label>
+        <input type="password" id="mot-de-passe" maxlength="128" placeholder="6 caractères minimum" autocomplete="current-password" required>
+      </div>
+      <p id="message-compte" class="message-erreur" hidden></p>
+      <button class="bouton" type="submit" id="bouton-compte">Se connecter</button>
+    </form>
+  </section>
+
+  <!-- 2) Pour un utilisateur connecté : son compte et ses recherches -->
+  <section id="zone-connecte" hidden>
+    <article class="carte-blanche">
+      <h2 id="mon-nom" style="margin: 0; font-size: 26px"></h2>
+      <p id="mon-email" class="texte-gris" style="margin: 4px 0 16px"></p>
+      <div class="ligne" style="gap: 10px">
+        <button class="bouton bouton-clair" type="button" id="bouton-nom">Modifier mon nom</button>
+        <button class="bouton bouton-clair" type="button" id="bouton-deconnexion">Se déconnecter</button>
+      </div>
+      <p style="margin: 16px 0 0"><button class="lien-rouge" type="button" id="bouton-supprimer">Supprimer mon compte</button></p>
+    </article>
+
+    <article class="carte-blanche" style="margin-top: 20px">
+      <div class="ligne" style="justify-content: space-between; align-items: center">
+        <h2 style="margin: 0; font-size: 26px">Mes recherches</h2>
+        <button class="lien-rouge" type="button" id="bouton-tout-effacer">Tout effacer</button>
+      </div>
+      <div id="liste-recherches" style="display: flex; flex-direction: column; gap: 10px; margin-top: 16px"></div>
+    </article>
+  </section>
+</main>
+
+<script src="commun.js?v=4"></script>
+<script>
+
+let inscription = false;
+
+// Les codes envoyés à l'API -> le texte affiché
+const DEPLACEMENTS = { pied: "à pied", moto: "à moto", taxi: "en taxi / woro-woro / gbaka", voiture: "en voiture", bus: "en bus" };
+
+
+// ---------- Afficher la bonne partie de la page ----------
+function afficher() {
+  const compte = monCompte();
+  document.getElementById("zone-invite").hidden = compte !== null;
+  document.getElementById("zone-connecte").hidden = compte === null;
+  if (compte) {
+    document.getElementById("mon-nom").textContent = compte.nom;
+    document.getElementById("mon-email").textContent = compte.email;
+    chargerRecherches();
+  }
+}
+
+
+// ---------- 1) Invité : les deux onglets et le formulaire ----------
+function choisirOnglet(creerUnCompte) {
+  inscription = creerUnCompte;
+  document.getElementById("onglet-connexion").classList.toggle("actif", !creerUnCompte);
+  document.getElementById("onglet-inscription").classList.toggle("actif", creerUnCompte);
+  document.getElementById("champ-nom").hidden = !creerUnCompte;
+  document.getElementById("bouton-compte").textContent = creerUnCompte ? "Créer mon compte" : "Se connecter";
+  document.getElementById("message-compte").hidden = true;
+}
+document.getElementById("onglet-connexion").addEventListener("click", () => choisirOnglet(false));
+document.getElementById("onglet-inscription").addEventListener("click", () => choisirOnglet(true));
+
+document.getElementById("formulaire-compte").addEventListener("submit", async evenement => {
+  evenement.preventDefault();
+  const message = document.getElementById("message-compte");
+  const bouton = document.getElementById("bouton-compte");
+  const email = document.getElementById("email").value.trim();
+  const motDePasse = document.getElementById("mot-de-passe").value;
+  bouton.disabled = true;
+  try {
+    const reponse = inscription
+      ? await envoyerApi("/comptes/inscription", { nom: document.getElementById("nom").value.trim(), email, mot_de_passe: motDePasse })
+      : await envoyerApi("/comptes/connexion", { email, mot_de_passe: motDePasse });
+    seSouvenir(reponse);
+    document.getElementById("mot-de-passe").value = "";
+    afficher();
+  } catch (erreur) {
+    message.textContent = erreur.message;
+    message.hidden = false;
+  }
+  bouton.disabled = false;
+});
+
+
+// ---------- 2) Connecté : le compte ----------
+document.getElementById("bouton-nom").addEventListener("click", async () => {
+  const nouveauNom = prompt("Votre nouveau nom :", monCompte().nom);
+  if (nouveauNom === null) return;
+  try {
+    const reponse = await envoyerApi("/comptes/moi", { nom: nouveauNom }, "PUT", monCompte().jeton);
+    localStorage.setItem("nom", reponse.nom);
+    afficher();
+  } catch (erreur) {
+    alert(erreur.message);
+  }
+});
+
+document.getElementById("bouton-deconnexion").addEventListener("click", async () => {
+  try {
+    await envoyerApi("/comptes/deconnexion", { jeton: monCompte().jeton });
+  } catch (erreur) {}
+  oublier();
+  afficher();
+});
+
+document.getElementById("bouton-supprimer").addEventListener("click", async () => {
+  if (!confirm("Supprimer votre compte pour de bon ? Vos recherches seront effacées aussi.")) return;
+  try {
+    await envoyerApi("/comptes/moi", {}, "DELETE", monCompte().jeton);
+    oublier();
+    afficher();
+  } catch (erreur) {
+    alert(erreur.message);
+  }
+});
+
+
+// ---------- 2) Connecté : les recherches ----------
+async function chargerRecherches() {
+  const zone = document.getElementById("liste-recherches");
+  zone.innerHTML = `<p class="chargement">Chargement…</p>`;
+  try {
+    const recherches = await lireApi("/recherches", monCompte().jeton);
+    zone.innerHTML = recherches.length
+      ? recherches.map(carteRecherche).join("")
+      : `<p class="texte-gris" style="margin: 0">Aucune recherche pour le moment. Calculez un risque dans
+           <a href="carte.html">Calculer mon risque</a>.</p>`;
+  } catch (erreur) {
+    if (erreur.message.includes("pas connecté")) {
+      oublier();
+      afficher();
+      return;
+    }
+    zone.innerHTML = messageApiArretee(erreur);
+  }
+}
+
+// Une recherche : « Angré (Cocody) », « à 21 h · à pied · rue sombre », la date, le niveau et un bouton « Effacer »
+function carteRecherche(r) {
+  const lieu = r.quartier ? `${r.quartier} (${r.commune})` : r.commune;
+  const details = [`à ${r.heure} h`, DEPLACEMENTS[r.deplacement],
+                   { sombre: "rue sombre", eclairee: "rue éclairée" }[r.eclairage]]
+                  .filter(Boolean).join(" · ");
+  return `
+    <div class="recherche">
+      <div>
+        <strong>${proteger(lieu)}</strong>
+        <div>${proteger(details)}</div>
+        <div class="petit texte-gris">Calculé le ${proteger(r.date)}</div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px">
+        ${pastille(r.niveau, r.score + "/100 ·")}
+        <button class="lien-rouge" type="button" onclick="effacer(${Number(r.id_recherche)})">Effacer</button>
+      </div>
+    </div>`;
+}
+
+// Effacer une recherche (avec son numéro), ou toutes si numero est null
+async function effacer(numero) {
+  const chemin = numero === null ? "/recherches" : `/recherches/${numero}`;
+  try {
+    await envoyerApi(chemin, {}, "DELETE", monCompte().jeton);
+  } catch (erreur) {
+    alert(erreur.message);
+  }
+  chargerRecherches();
+}
+document.getElementById("bouton-tout-effacer").addEventListener("click", () => {
+  if (confirm("Effacer toutes vos recherches ?")) effacer(null);
+});
+
+
+// ---------- Au chargement de la page ----------
+afficher();
+</script>
+</body>
+</html>
